@@ -44,12 +44,6 @@
             transform: rotate(180deg);
         }
         
-        .glass-header {
-            backdrop-filter: blur(20px);
-            background: rgba(254, 254, 254, 0.9);
-            border-bottom: 0.5px solid rgba(0,0,0,0.05);
-        }
-        
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out;
         }
@@ -62,9 +56,8 @@
 </head>
 <body>
     <div class="ios-container">
-
         <!-- 顶部导航 -->
-        <div class="px-4 py-2 flex items-center justify-between">
+        <div class="px-4 pt-12 pb-2 flex items-center justify-between">
             <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors">
                 <i class="fas fa-times text-base text-stone-600"></i>
             </button>
@@ -96,16 +89,6 @@
     </div>
 
     <script>
-        // 实时时钟
-        function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('clock').textContent = `${hours}:${minutes}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
 
         function saveToStorage() {
@@ -263,5 +246,4 @@
         render();
     </script>
 </body>
-
 </html>
