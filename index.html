@@ -172,20 +172,50 @@
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
         let syncStatus = 'STANDBY';
 
-        // 生成 Protocol ID (SP-XXXX-XXXX 格式)
-        function generateProtocolId() {
+        // 基于浏览器指纹生成固定代号（或使用默认）
+        function generateFixedId() {
+            // 尝试从 localStorage 读取
+            let fixedId = localStorage.getItem('fixed_protocol_id');
+            if (fixedId) return fixedId;
+            
+            // 生成新的固定 ID
             const part1 = Math.floor(1000 + Math.random() * 9000);
             const part2 = Math.floor(1000 + Math.random() * 9000);
-            return `SP-${part1}-${part2}`;
+            fixedId = `SP-${part1}-${part2}`;
+            
+            // 保存为固定 ID
+            localStorage.setItem('fixed_protocol_id', fixedId);
+            return fixedId;
         }
 
+        // 获取 Protocol ID（优先使用固定 ID）
         function getProtocolId() {
-            let id = localStorage.getItem('protocol_id');
-            if (!id) {
-                id = generateProtocolId();
-                localStorage.setItem('protocol_id', id);
+            // 检查是否有用户手动设置的 ID
+            let customId = localStorage.getItem('custom_protocol_id');
+            if (customId) return customId;
+            
+            // 使用自动生成的固定 ID
+            return generateFixedId();
+        }
+
+        // 设置自定义 ID（用户手动指定）
+        function setCustomProtocolId(newId) {
+            if (!/^SP-\d{4}-\d{4}$/.test(newId)) {
+                alert('格式错误，必须是 SP-XXXX-XXXX');
+                return false;
             }
-            return id;
+            localStorage.setItem('custom_protocol_id', newId);
+            localStorage.removeItem('fixed_protocol_id'); // 清除自动生成的
+            return true;
+        }
+
+        // 重置为新的随机 ID
+        function resetProtocolId() {
+            localStorage.removeItem('custom_protocol_id');
+            localStorage.removeItem('fixed_protocol_id');
+            const newId = generateFixedId();
+            displayProtocolId();
+            return newId;
         }
 
         function displayProtocolId() {
@@ -226,7 +256,7 @@
         // 从云端加载
         async function loadFromCloud() {
             const protocolId = getProtocolId();
-            const deviceCode = protocolId.replace(/SP-|-/g, ''); // 提取数字部分用于查询
+            const deviceCode = protocolId.replace(/SP-|-/g, '');
             
             try {
                 const { data, error } = await supabaseClient
@@ -284,7 +314,6 @@
             const input = document.getElementById('remote-protocol-input');
             const remoteId = input.value.trim().toUpperCase();
             
-            // 验证格式 SP-XXXX-XXXX
             if (!/^SP-\d{4}-\d{4}$/.test(remoteId)) {
                 alert('格式错误\n请输入: SP-XXXX-XXXX');
                 return;
@@ -304,7 +333,6 @@
                     return;
                 }
                 
-                // 统计记录数
                 let count = 0;
                 Object.values(data.data).forEach(day => {
                     Object.values(day).forEach(cat => count += cat?.length || 0);
@@ -312,7 +340,8 @@
                 
                 if (confirm(`检测到 ${count} 条记录\n\n是否建立数据连接？\n\n⚠️ 这将覆盖当前本地档案`)) {
                     records = data.data;
-                    localStorage.setItem('protocol_id', remoteId);
+                    // 设置为自定义 ID，这样不会随浏览器改变
+                    setCustomProtocolId(remoteId);
                     saveToStorage();
                     displayProtocolId();
                     syncStatus = 'CONNECTED';
@@ -483,6 +512,7 @@
     </script>
 </body>
 </html>
+
 
 
 
