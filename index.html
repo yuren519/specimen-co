@@ -106,13 +106,18 @@
             render();
         }
 
-        function deleteRecord(dateKey, category, id) {
-            if (records[dateKey]?.[category]) {
-                records[dateKey][category] = records[dateKey][category].filter(r => r.id !== id);
-                saveToStorage();
-                render();
-            }
-        }
+function deleteRecord(dateKey, category, id) {
+    // 添加二次确认
+    if (!confirm('确定要删除这条记录吗？')) {
+        return; // 用户点击取消，不删除
+    }
+    
+    if (records[dateKey]?.[category]) {
+        records[dateKey][category] = records[dateKey][category].filter(r => r.id !== id);
+        saveToStorage();
+        render();
+    }
+}
 
         function showInput(dateKey, category) {
             const inputId = `input-${dateKey}-${category}`;
@@ -241,4 +246,5 @@
     </script>
 </body>
 </html>
+
 
