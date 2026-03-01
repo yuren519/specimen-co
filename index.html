@@ -113,6 +113,25 @@
             padding-top: 12px;
             margin-top: 16px;
         }
+        
+        /* 分类标签样式 */
+        .category-code {
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: #a8a29e;
+            font-weight: 500;
+        }
+        
+        .category-name {
+            font-size: 13px;
+            color: #44403c;
+            font-weight: 500;
+        }
+        
+        .category-desc {
+            font-size: 10px;
+            color: #78716c;
+        }
     </style>
 </head>
 <body>
@@ -137,7 +156,7 @@
         <div class="px-5 pb-12 space-y-0.5" id="diaryList"></div>
     </div>
 
-    <!-- 首次启动弹窗（新增文案） -->
+    <!-- 首次启动弹窗 -->
     <div id="first-run-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-stone-900/95 backdrop-blur-md p-6">
         <div class="archive-modal w-full max-w-sm rounded-lg p-8 relative max-h-[90vh] overflow-y-auto">
             <!-- 协议标题 -->
@@ -175,7 +194,7 @@
         </div>
     </div>
 
-    <!-- 档案设置弹窗（新增 SYSTEM_LOG） -->
+    <!-- 档案设置弹窗 -->
     <div id="archive-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/20 backdrop-blur-sm p-4">
         <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <!-- 关闭按钮 -->
@@ -234,7 +253,7 @@
                 </div>
             </div>
             
-            <!-- SYSTEM_LOG（新增） -->
+            <!-- SYSTEM_LOG -->
             <div class="system-log">
                 <div class="archive-label mb-2">[ SYSTEM_LOG ]</div>
                 <div class="space-y-1">
@@ -300,7 +319,7 @@
 
         async function confirmIdentity() {
             const key = document.getElementById('new-key-display').textContent;
-            localStorage.setItem('custom_protocol_id', key);
+            localStorage.setItem('custom_protocol_id', 'SP-' + key.slice(0,4) + '-' + key.slice(4));
             document.getElementById('first-run-modal').classList.add('hidden');
             document.getElementById('first-run-modal').classList.remove('flex');
             await saveToCloud();
@@ -308,7 +327,9 @@
         }
 
         function showFirstRunModal() {
-            document.getElementById('new-key-display').textContent = generateFixedId().replace('SP-', '').replace('-', '');
+            const newId = generateFixedId();
+            const numericPart = newId.replace('SP-', '').replace('-', '');
+            document.getElementById('new-key-display').textContent = numericPart;
             const modal = document.getElementById('first-run-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -543,11 +564,12 @@
             document.getElementById(`input-${dateKey}-${category}`)?.remove();
         }
 
+        // ========== 四个分类（档案馆风格）==========
         const categories = [
-            { icon: '🍽️', name: 'Yum…', emoji: '😋', desc: '吃' },
-            { icon: '📖', name: 'Glimmers…', emoji: '😃', desc: '悟' },
-            { icon: '💬', name: 'Jots…', emoji: '😳', desc: '记' },
-            { icon: '👂👀', name: 'Flicker…', emoji: '😉', desc: '听/看' }
+            { code: '[ TASTE ]', name: '味觉存档', emoji: '🥐', icon: '🥐' },
+            { code: '[ QUOTES ]', name: '文献索引', emoji: '📖', icon: '📖' },
+            { code: '[ LOGS ]', name: '时空存证', emoji: '⏱️', icon: '⏱️' },
+            { code: '[ MEDIA ]', name: '视听切片', emoji: '🎞️', icon: '🎞️' }
         ];
 
         function generateDates() {
@@ -604,10 +626,12 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-base">${cat.emoji}</span>
                                         <div class="flex flex-col leading-tight">
-                                            <span class="text-sm text-stone-700 font-normal tracking-tight">${cat.name} ${cat.desc}</span>
-                                            <span class="text-[10px] text-stone-400">${items.length} records</span>
+                                            <div class="flex items-baseline gap-2">
+                                                <span class="category-code">${cat.code}</span>
+                                                <span class="category-name">${cat.name}</span>
+                                            </div>
+                                            <span class="category-desc">${items.length} specimens</span>
                                         </div>
-                                        <span class="text-sm opacity-40">${cat.icon}</span>
                                     </div>
                                     <span class="text-stone-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity">+</span>
                                 </div>
@@ -641,7 +665,6 @@
 
         // ========== 初始化 ==========
         function init() {
-            // 检查是否是首次使用
             const hasVisited = localStorage.getItem('has_visited');
             if (!hasVisited) {
                 showFirstRunModal();
@@ -653,7 +676,6 @@
             }
         }
 
-        // 启动
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
