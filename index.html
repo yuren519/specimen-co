@@ -8,12 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1a1a1a">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes"><style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <style>
         body {
             font-family: 'JetBrains Mono', monospace;
             background: #EFEFEF;
@@ -58,12 +59,39 @@
             from { opacity: 0; transform: translateY(-5px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* 档案风格弹窗 */
+        .archive-modal {
+            background: #f5f5f5;
+            border: 1px solid #d4d4d4;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        
+        .archive-label {
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            color: #78716c;
+            text-transform: uppercase;
+        }
+        
+        .archive-value {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-connected {
+            color: #16a34a;
+        }
+        
+        .status-standby {
+            color: #78716c;
+        }
     </style>
 </head>
 <body>
     <div class="ios-container">
-        <!-- 品牌标题（完全置顶） -->
-        <div class="px-6 pt-2 pb-4">
+        <!-- 品牌标题（带设置按钮） -->
+        <div class="px-6 pt-2 pb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span style="font-size: 24px;">&#128194;</span>
                 <span style="font-size: 24px;">&#129517;</span>
@@ -72,24 +100,233 @@
                     <span class="text-[10px] text-stone-400 font-light tracking-widest uppercase">Daily Chronicles</span>
                 </div>
             </div>
+            <!-- 设置按钮（改为齿轮图标） -->
+            <button onclick="showArchiveModal()" class="text-stone-400 hover:text-stone-600 transition-colors p-2">
+                <i class="fas fa-cog text-lg"></i>
+            </button>
         </div>
 
         <!-- 日记列表 -->
         <div class="px-5 pb-12 space-y-0.5" id="diaryList"></div>
+    </div>
 
-        <!-- 底部存档标记 -->
-        <div class="fixed bottom-4 right-5 text-stone-300 text-[10px] font-light tracking-widest uppercase">
-            [archive]
+    <!-- 档案风格弹窗（默认隐藏） -->
+    <div id="archive-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+        <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative">
+            <!-- 关闭按钮 -->
+            <button onclick="closeArchiveModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <!-- 标题 -->
+            <div class="mb-6 pb-4 border-b border-stone-300">
+                <div class="archive-label mb-1">Archive Access</div>
+                <div class="text-lg font-semibold text-stone-800">档案存取</div>
+            </div>
+            
+            <!-- ACCESSION NO. -->
+            <div class="mb-5">
+                <div class="archive-label mb-2">[ ACCESSION NO. ]</div>
+                <div class="archive-value text-xl font-bold text-stone-800 tracking-wider" id="protocol-id">
+                    SP-0000-0000
+                </div>
+            </div>
+            
+            <!-- UPLINK STATUS -->
+            <div class="mb-6">
+                <div class="archive-label mb-2">[ UPLINK STATUS ]</div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse" id="status-dot"></span>
+                    <span class="archive-value text-sm font-medium status-connected" id="uplink-status">CONNECTED</span>
+                </div>
+            </div>
+            
+            <!-- 同步输入 -->
+            <div class="space-y-3">
+                <div class="archive-label">[ REMOTE ACCESS ]</div>
+                <div class="flex gap-2">
+                    <input type="text" 
+                           id="remote-protocol-input"
+                           placeholder="SP-XXXX-XXXX" 
+                           class="flex-1 px-3 py-2 bg-white border border-stone-300 rounded text-sm font-mono tracking-wider focus:outline-none focus:border-stone-500 uppercase"
+                           maxlength="13">
+                    <button onclick="syncFromRemote()" 
+                            class="px-4 py-2 bg-stone-800 text-white text-xs font-medium rounded hover:bg-stone-700 transition-colors">
+                        UPLINK
+                    </button>
+                </div>
+                <div class="text-[10px] text-stone-500 leading-relaxed">
+                    输入其他设备的 ACCESSION NO. 以建立数据连接
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ========== Supabase 配置 ==========
+        const SUPABASE_URL = 'https://nfuomptzcarmqrdzhpna.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_DRoG26c3i5nGnl4GGYyp_Q_a4Z2NN4R';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ========== 数据管理 ==========
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
+        let syncStatus = 'STANDBY';
+
+        // 生成 Protocol ID (SP-XXXX-XXXX 格式)
+        function generateProtocolId() {
+            const part1 = Math.floor(1000 + Math.random() * 9000);
+            const part2 = Math.floor(1000 + Math.random() * 9000);
+            return `SP-${part1}-${part2}`;
+        }
+
+        function getProtocolId() {
+            let id = localStorage.getItem('protocol_id');
+            if (!id) {
+                id = generateProtocolId();
+                localStorage.setItem('protocol_id', id);
+            }
+            return id;
+        }
+
+        function displayProtocolId() {
+            const id = getProtocolId();
+            const el = document.getElementById('protocol-id');
+            if (el) el.textContent = id;
+        }
+
+        // 显示/隐藏弹窗
+        function showArchiveModal() {
+            document.getElementById('archive-modal').classList.remove('hidden');
+            document.getElementById('archive-modal').classList.add('flex');
+            displayProtocolId();
+            updateSyncStatus();
+        }
+
+        function closeArchiveModal() {
+            document.getElementById('archive-modal').classList.add('hidden');
+            document.getElementById('archive-modal').classList.remove('flex');
+        }
+
+        // 更新同步状态显示
+        function updateSyncStatus() {
+            const statusEl = document.getElementById('uplink-status');
+            const dotEl = document.getElementById('status-dot');
+            
+            if (syncStatus === 'CONNECTED') {
+                statusEl.textContent = 'CONNECTED';
+                statusEl.className = 'archive-value text-sm font-medium status-connected';
+                dotEl.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+            } else {
+                statusEl.textContent = 'STANDBY';
+                statusEl.className = 'archive-value text-sm font-medium status-standby';
+                dotEl.className = 'w-2 h-2 rounded-full bg-stone-400';
+            }
+        }
+
+        // 从云端加载
+        async function loadFromCloud() {
+            const protocolId = getProtocolId();
+            const deviceCode = protocolId.replace(/SP-|-/g, ''); // 提取数字部分用于查询
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('records')
+                    .select('data, updated_at')
+                    .eq('device_code', deviceCode)
+                    .single();
+                
+                if (data?.data && Object.keys(data.data).length > 0) {
+                    const cloudTime = new Date(data.updated_at || 0);
+                    const localTime = new Date(localStorage.getItem('last_save_time') || 0);
+                    
+                    if (cloudTime > localTime) {
+                        records = data.data;
+                        localStorage.setItem('specimen_records', JSON.stringify(records));
+                        render();
+                        syncStatus = 'CONNECTED';
+                        console.log('档案已同步');
+                    }
+                }
+            } catch (e) {
+                console.log('无云端档案或首次使用');
+            }
+        }
+
+        // 保存到云端
+        async function saveToCloud() {
+            const protocolId = getProtocolId();
+            const deviceCode = protocolId.replace(/SP-|-/g, '');
+            
+            try {
+                await supabaseClient
+                    .from('records')
+                    .upsert({
+                        device_code: deviceCode,
+                        data: records,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'device_code' });
+                
+                syncStatus = 'CONNECTED';
+                console.log('档案已归档');
+            } catch (e) {
+                console.error('归档失败:', e);
+            }
+        }
 
         function saveToStorage() {
             localStorage.setItem('specimen_records', JSON.stringify(records));
+            localStorage.setItem('last_save_time', new Date().toISOString());
+            saveToCloud();
         }
 
+        // 从其他设备同步
+        async function syncFromRemote() {
+            const input = document.getElementById('remote-protocol-input');
+            const remoteId = input.value.trim().toUpperCase();
+            
+            // 验证格式 SP-XXXX-XXXX
+            if (!/^SP-\d{4}-\d{4}$/.test(remoteId)) {
+                alert('格式错误\n请输入: SP-XXXX-XXXX');
+                return;
+            }
+            
+            const remoteCode = remoteId.replace(/SP-|-/g, '');
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('records')
+                    .select('data')
+                    .eq('device_code', remoteCode)
+                    .single();
+                
+                if (error || !data?.data) {
+                    alert('未找到档案\n请检查 ACCESSION NO. 是否正确');
+                    return;
+                }
+                
+                // 统计记录数
+                let count = 0;
+                Object.values(data.data).forEach(day => {
+                    Object.values(day).forEach(cat => count += cat?.length || 0);
+                });
+                
+                if (confirm(`检测到 ${count} 条记录\n\n是否建立数据连接？\n\n⚠️ 这将覆盖当前本地档案`)) {
+                    records = data.data;
+                    localStorage.setItem('protocol_id', remoteId);
+                    saveToStorage();
+                    displayProtocolId();
+                    syncStatus = 'CONNECTED';
+                    updateSyncStatus();
+                    render();
+                    alert('✓ 数据连接已建立\n档案同步完成');
+                    input.value = '';
+                }
+            } catch (e) {
+                alert('连接失败\n请检查网络状态');
+            }
+        }
+
+        // ========== 原有功能 ==========
         function getTodayKey() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -107,18 +344,14 @@
             render();
         }
 
-function deleteRecord(dateKey, category, id) {
-    // 添加二次确认
-    if (!confirm('确定要删除这条记录吗？')) {
-        return; // 用户点击取消，不删除
-    }
-    
-    if (records[dateKey]?.[category]) {
-        records[dateKey][category] = records[dateKey][category].filter(r => r.id !== id);
-        saveToStorage();
-        render();
-    }
-}
+        function deleteRecord(dateKey, category, id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+            if (records[dateKey]?.[category]) {
+                records[dateKey][category] = records[dateKey][category].filter(r => r.id !== id);
+                saveToStorage();
+                render();
+            }
+        }
 
         function showInput(dateKey, category) {
             const inputId = `input-${dateKey}-${category}`;
@@ -242,85 +475,15 @@ function deleteRecord(dateKey, category, id) {
             subEntries.classList.toggle('expanded');
             chevron.classList.toggle('rotated');
         }
-// ========== 数据同步功能 ==========
 
-// 导出数据为分享链接
-function exportData() {
-    const dataStr = JSON.stringify(records);
-    const compressed = btoa(encodeURIComponent(dataStr));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?sync=${compressed}`;
-    
-    // 复制到剪贴板
-    navigator.clipboard.writeText(shareUrl).then(() => {
-        alert('✅ 同步链接已复制！\n\n在新设备浏览器中打开此链接即可同步数据。');
-    }).catch(() => {
-        // 如果复制失败，显示链接
-        prompt('请复制以下链接：', shareUrl);
-    });
-}
-
-// 显示导入弹窗
-function showImportModal() {
-    const url = prompt('请输入同步链接：');
-    if (url && url.includes('?sync=')) {
-        // 提取 sync 参数
-        const syncData = url.split('?sync=')[1];
-        window.location.search = `?sync=${syncData}`;
-    } else if (url) {
-        alert('无效的同步链接');
-    }
-}
-
-// 检查 URL 是否有同步数据
-function checkImportData() {
-    const params = new URLSearchParams(window.location.search);
-    const syncData = params.get('sync');
-    
-    if (syncData) {
-        try {
-            const decoded = decodeURIComponent(atob(syncData));
-            const importedRecords = JSON.parse(decoded);
-            
-            // 统计记录数
-            let count = 0;
-            Object.values(importedRecords).forEach(day => {
-                Object.values(day).forEach(cat => count += cat.length);
-            });
-            
-            if (confirm(`📥 检测到 ${count} 条记录，是否导入？\n\n⚠️ 这将覆盖当前设备的所有数据！`)) {
-                records = importedRecords;
-                saveToStorage();
-                render();
-                alert('✅ 数据导入成功！');
-            }
-            
-            // 清除 URL 参数
-            window.history.replaceState({}, '', window.location.pathname);
-        } catch (e) {
-            alert('❌ 链接无效或已损坏');
-        }
-    }
-}
-
-// 页面加载时检查同步数据
-checkImportData();
-
-// ========== 数据同步功能结束 ==========
+        // ========== 初始化 ==========
+        displayProtocolId();
+        loadFromCloud();
         render();
     </script>
-<!-- 数据同步按钮 -->
-<div class="fixed bottom-4 left-5 flex gap-2 z-40">
-    <button onclick="exportData()" 
-            class="px-3 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 shadow-lg">
-        <i class="fas fa-share-alt mr-1"></i>导出同步
-    </button>
-    <button onclick="showImportModal()" 
-            class="px-3 py-1.5 bg-stone-200 text-stone-600 rounded-md text-xs hover:bg-stone-300 shadow-lg">
-        <i class="fas fa-download mr-1"></i>导入
-    </button>
-</div>
 </body>
 </html>
+
 
 
 
