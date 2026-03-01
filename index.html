@@ -90,6 +90,29 @@
         .status-error {
             color: #dc2626;
         }
+        
+        /* 首次启动弹窗特殊样式 */
+        .protocol-text {
+            font-size: 11px;
+            line-height: 1.8;
+            color: #57534e;
+            letter-spacing: 0.02em;
+        }
+        
+        .protocol-divider {
+            border-top: 1px solid #d6d3d1;
+            margin: 16px 0;
+        }
+        
+        .system-log {
+            font-size: 9px;
+            line-height: 1.6;
+            color: #a8a29e;
+            letter-spacing: 0.05em;
+            border-top: 1px solid #e7e5e4;
+            padding-top: 12px;
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>
@@ -114,9 +137,47 @@
         <div class="px-5 pb-12 space-y-0.5" id="diaryList"></div>
     </div>
 
-    <!-- 档案风格弹窗（默认隐藏） -->
+    <!-- 首次启动弹窗（新增文案） -->
+    <div id="first-run-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-stone-900/95 backdrop-blur-md p-6">
+        <div class="archive-modal w-full max-w-sm rounded-lg p-8 relative max-h-[90vh] overflow-y-auto">
+            <!-- 协议标题 -->
+            <div class="text-[10px] text-stone-400 mb-6 tracking-widest uppercase text-center">[ PROTOCOL_INITIATED ]</div>
+            
+            <!-- 欢迎文案 -->
+            <div class="protocol-text mb-6 text-stone-600">
+                <p class="mb-3">欢迎来到 Specimen & Co。</p>
+                <p class="mb-3">在这里，生活不再是流逝的瞬间，而是被编号、被观察、被封存的数字标本。</p>
+                <p>请保管好你的 6 位 Access Key。<br>它是开启这个陈列室的唯一密钥，也是你隐私的最后防线。</p>
+            </div>
+            
+            <div class="protocol-divider"></div>
+            
+            <!-- Access Key 显示 -->
+            <div class="text-center mb-6">
+                <div class="text-[9px] text-stone-400 mb-2 uppercase tracking-widest">Access Key</div>
+                <div id="new-key-display" class="text-3xl font-bold text-stone-800 tracking-widest font-mono">000000</div>
+            </div>
+            
+            <!-- 确认选项 -->
+            <label class="flex items-start gap-3 cursor-pointer mb-6">
+                <input type="checkbox" id="key-confirm" class="mt-1 accent-stone-800" onchange="toggleEnterButton(this)">
+                <span class="text-[10px] text-stone-500 leading-relaxed">我已记录此编号，知晓遗失将导致档案永久不可恢复。</span>
+            </label>
+            
+            <!-- 进入按钮 -->
+            <button id="enter-archive-btn" onclick="confirmIdentity()" disabled 
+                    class="w-full py-4 bg-stone-200 text-stone-400 text-[10px] tracking-[0.3em] uppercase rounded transition-all">
+                Enter Archive
+            </button>
+            
+            <!-- 签名 -->
+            <div class="text-center mt-4 text-[10px] text-stone-400 italic">— 标本管理员</div>
+        </div>
+    </div>
+
+    <!-- 档案设置弹窗（新增 SYSTEM_LOG） -->
     <div id="archive-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-        <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative">
+        <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <!-- 关闭按钮 -->
             <button onclick="closeArchiveModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
                 <i class="fas fa-times"></i>
@@ -145,7 +206,7 @@
                 </div>
             </div>
             
-            <!-- SYNC CONTROL（新增强制同步） -->
+            <!-- SYNC CONTROL -->
             <div class="mb-6">
                 <div class="archive-label mb-2">[ SYNC CONTROL ]</div>
                 <button onclick="forceSync()" id="sync-btn" class="px-4 py-2 bg-stone-700 text-white text-xs font-medium rounded hover:bg-stone-600 transition-colors w-full">
@@ -154,9 +215,9 @@
                 <div class="text-[10px] text-stone-500 mt-1">手动同步当前档案到云端</div>
             </div>
             
-            <!-- 同步输入 -->
-            <div class="space-y-3">
-                <div class="archive-label">[ REMOTE ACCESS ]</div>
+            <!-- REMOTE ACCESS -->
+            <div class="mb-6">
+                <div class="archive-label mb-2">[ REMOTE ACCESS ]</div>
                 <div class="flex gap-2">
                     <input type="text" 
                            id="remote-protocol-input"
@@ -168,8 +229,21 @@
                         UPLINK
                     </button>
                 </div>
-                <div class="text-[10px] text-stone-500 leading-relaxed">
+                <div class="text-[10px] text-stone-500 leading-relaxed mt-2">
                     输入其他设备的 ACCESSION NO. 以建立数据连接
+                </div>
+            </div>
+            
+            <!-- SYSTEM_LOG（新增） -->
+            <div class="system-log">
+                <div class="archive-label mb-2">[ SYSTEM_LOG ]</div>
+                <div class="space-y-1">
+                    <p><span class="text-stone-600">Data Sovereignty:</span> 标本数据始终存储于你的本地及加密云端隧道。</p>
+                    <p><span class="text-stone-600">Zero Privacy Leak:</span> 我们不收集你的任何个人生物信息，只认领 6 位索引号。</p>
+                    <p><span class="text-stone-600">Archive Integrity:</span> 请确保定期同步，以维持馆藏记录的完整性。</p>
+                </div>
+                <div class="mt-3 pt-2 border-t border-stone-200 text-[8px] text-stone-400">
+                    Build with AI for the minimalists.
                 </div>
             </div>
         </div>
@@ -210,6 +284,37 @@
             if (el) el.textContent = id;
         }
 
+        // ========== 首次启动弹窗控制 ==========
+        function toggleEnterButton(checkbox) {
+            const btn = document.getElementById('enter-archive-btn');
+            if (checkbox.checked) {
+                btn.disabled = false;
+                btn.classList.remove('bg-stone-200', 'text-stone-400');
+                btn.classList.add('bg-stone-800', 'text-white');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-stone-200', 'text-stone-400');
+                btn.classList.remove('bg-stone-800', 'text-white');
+            }
+        }
+
+        async function confirmIdentity() {
+            const key = document.getElementById('new-key-display').textContent;
+            localStorage.setItem('custom_protocol_id', key);
+            document.getElementById('first-run-modal').classList.add('hidden');
+            document.getElementById('first-run-modal').classList.remove('flex');
+            await saveToCloud();
+            render();
+        }
+
+        function showFirstRunModal() {
+            document.getElementById('new-key-display').textContent = generateFixedId().replace('SP-', '').replace('-', '');
+            const modal = document.getElementById('first-run-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // ========== 档案设置弹窗控制 ==========
         function showArchiveModal() {
             document.getElementById('archive-modal').classList.remove('hidden');
             document.getElementById('archive-modal').classList.add('flex');
@@ -241,7 +346,7 @@
             }
         }
 
-        // ========== 强制同步（新增）==========
+        // ========== 强制同步 ==========
         async function forceSync() {
             const btn = document.getElementById('sync-btn');
             const originalText = btn.textContent;
@@ -255,19 +360,15 @@
                 
                 if (syncStatus === 'CONNECTED') {
                     btn.textContent = '✓ SYNCED';
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                        btn.classList.remove('opacity-50');
-                    }, 2000);
                 } else {
                     btn.textContent = '✗ FAILED';
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                        btn.classList.remove('opacity-50');
-                    }, 2000);
                 }
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }, 2000);
             } catch (e) {
                 btn.textContent = '✗ ERROR';
                 setTimeout(() => {
@@ -539,9 +640,25 @@
         }
 
         // ========== 初始化 ==========
-        displayProtocolId();
-        loadFromCloud();
-        render();
+        function init() {
+            // 检查是否是首次使用
+            const hasVisited = localStorage.getItem('has_visited');
+            if (!hasVisited) {
+                showFirstRunModal();
+                localStorage.setItem('has_visited', 'true');
+            } else {
+                displayProtocolId();
+                loadFromCloud();
+                render();
+            }
+        }
+
+        // 启动
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
