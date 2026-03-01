@@ -86,6 +86,10 @@
         .status-standby {
             color: #78716c;
         }
+        
+        .status-error {
+            color: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -133,12 +137,21 @@
             </div>
             
             <!-- UPLINK STATUS -->
-            <div class="mb-6">
+            <div class="mb-5">
                 <div class="archive-label mb-2">[ UPLINK STATUS ]</div>
                 <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse" id="status-dot"></span>
-                    <span class="archive-value text-sm font-medium status-connected" id="uplink-status">CONNECTED</span>
+                    <span class="w-2 h-2 rounded-full bg-stone-400" id="status-dot"></span>
+                    <span class="archive-value text-sm font-medium status-standby" id="uplink-status">STANDBY</span>
                 </div>
+            </div>
+            
+            <!-- SYNC CONTROL（新增强制同步） -->
+            <div class="mb-6">
+                <div class="archive-label mb-2">[ SYNC CONTROL ]</div>
+                <button onclick="forceSync()" id="sync-btn" class="px-4 py-2 bg-stone-700 text-white text-xs font-medium rounded hover:bg-stone-600 transition-colors w-full">
+                    SYNC NOW
+                </button>
+                <div class="text-[10px] text-stone-500 mt-1">手动同步当前档案到云端</div>
             </div>
             
             <!-- 同步输入 -->
@@ -172,50 +185,23 @@
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
         let syncStatus = 'STANDBY';
 
-        // 基于浏览器指纹生成固定代号（或使用默认）
+        // 基于浏览器指纹生成固定代号
         function generateFixedId() {
-            // 尝试从 localStorage 读取
             let fixedId = localStorage.getItem('fixed_protocol_id');
             if (fixedId) return fixedId;
             
-            // 生成新的固定 ID
             const part1 = Math.floor(1000 + Math.random() * 9000);
             const part2 = Math.floor(1000 + Math.random() * 9000);
             fixedId = `SP-${part1}-${part2}`;
             
-            // 保存为固定 ID
             localStorage.setItem('fixed_protocol_id', fixedId);
             return fixedId;
         }
 
-        // 获取 Protocol ID（优先使用固定 ID）
         function getProtocolId() {
-            // 检查是否有用户手动设置的 ID
             let customId = localStorage.getItem('custom_protocol_id');
             if (customId) return customId;
-            
-            // 使用自动生成的固定 ID
             return generateFixedId();
-        }
-
-        // 设置自定义 ID（用户手动指定）
-        function setCustomProtocolId(newId) {
-            if (!/^SP-\d{4}-\d{4}$/.test(newId)) {
-                alert('格式错误，必须是 SP-XXXX-XXXX');
-                return false;
-            }
-            localStorage.setItem('custom_protocol_id', newId);
-            localStorage.removeItem('fixed_protocol_id'); // 清除自动生成的
-            return true;
-        }
-
-        // 重置为新的随机 ID
-        function resetProtocolId() {
-            localStorage.removeItem('custom_protocol_id');
-            localStorage.removeItem('fixed_protocol_id');
-            const newId = generateFixedId();
-            displayProtocolId();
-            return newId;
         }
 
         function displayProtocolId() {
@@ -224,7 +210,6 @@
             if (el) el.textContent = id;
         }
 
-        // 显示/隐藏弹窗
         function showArchiveModal() {
             document.getElementById('archive-modal').classList.remove('hidden');
             document.getElementById('archive-modal').classList.add('flex');
@@ -237,7 +222,6 @@
             document.getElementById('archive-modal').classList.remove('flex');
         }
 
-        // 更新同步状态显示
         function updateSyncStatus() {
             const statusEl = document.getElementById('uplink-status');
             const dotEl = document.getElementById('status-dot');
@@ -246,6 +230,10 @@
                 statusEl.textContent = 'CONNECTED';
                 statusEl.className = 'archive-value text-sm font-medium status-connected';
                 dotEl.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+            } else if (syncStatus === 'ERROR') {
+                statusEl.textContent = 'ERROR';
+                statusEl.className = 'archive-value text-sm font-medium status-error';
+                dotEl.className = 'w-2 h-2 rounded-full bg-red-500';
             } else {
                 statusEl.textContent = 'STANDBY';
                 statusEl.className = 'archive-value text-sm font-medium status-standby';
@@ -253,7 +241,44 @@
             }
         }
 
-        // 从云端加载
+        // ========== 强制同步（新增）==========
+        async function forceSync() {
+            const btn = document.getElementById('sync-btn');
+            const originalText = btn.textContent;
+            
+            btn.textContent = 'SYNCING...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            
+            try {
+                await saveToCloud();
+                
+                if (syncStatus === 'CONNECTED') {
+                    btn.textContent = '✓ SYNCED';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50');
+                    }, 2000);
+                } else {
+                    btn.textContent = '✗ FAILED';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50');
+                    }, 2000);
+                }
+            } catch (e) {
+                btn.textContent = '✗ ERROR';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }, 2000);
+            }
+        }
+
+        // ========== 云端同步 ==========
         async function loadFromCloud() {
             const protocolId = getProtocolId();
             const deviceCode = protocolId.replace(/SP-|-/g, '');
@@ -273,22 +298,21 @@
                         records = data.data;
                         localStorage.setItem('specimen_records', JSON.stringify(records));
                         render();
-                        syncStatus = 'CONNECTED';
-                        console.log('档案已同步');
                     }
+                    syncStatus = 'CONNECTED';
                 }
             } catch (e) {
                 console.log('无云端档案或首次使用');
             }
+            updateSyncStatus();
         }
 
-        // 保存到云端
         async function saveToCloud() {
             const protocolId = getProtocolId();
             const deviceCode = protocolId.replace(/SP-|-/g, '');
             
             try {
-                await supabaseClient
+                const { error } = await supabaseClient
                     .from('records')
                     .upsert({
                         device_code: deviceCode,
@@ -296,10 +320,20 @@
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'device_code' });
                 
+                if (error) {
+                    console.error('Supabase error:', error);
+                    syncStatus = 'ERROR';
+                    updateSyncStatus();
+                    return;
+                }
+                
                 syncStatus = 'CONNECTED';
-                console.log('档案已归档');
+                updateSyncStatus();
+                console.log('✓ 档案已归档');
             } catch (e) {
                 console.error('归档失败:', e);
+                syncStatus = 'ERROR';
+                updateSyncStatus();
             }
         }
 
@@ -309,7 +343,6 @@
             saveToCloud();
         }
 
-        // 从其他设备同步
         async function syncFromRemote() {
             const input = document.getElementById('remote-protocol-input');
             const remoteId = input.value.trim().toUpperCase();
@@ -340,9 +373,9 @@
                 
                 if (confirm(`检测到 ${count} 条记录\n\n是否建立数据连接？\n\n⚠️ 这将覆盖当前本地档案`)) {
                     records = data.data;
-                    // 设置为自定义 ID，这样不会随浏览器改变
-                    setCustomProtocolId(remoteId);
-                    saveToStorage();
+                    localStorage.setItem('custom_protocol_id', remoteId);
+                    localStorage.setItem('specimen_records', JSON.stringify(records));
+                    saveToCloud();
                     displayProtocolId();
                     syncStatus = 'CONNECTED';
                     updateSyncStatus();
@@ -512,9 +545,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
