@@ -241,10 +241,85 @@ function deleteRecord(dateKey, category, id) {
             subEntries.classList.toggle('expanded');
             chevron.classList.toggle('rotated');
         }
+// ========== 数据同步功能 ==========
 
+// 导出数据为分享链接
+function exportData() {
+    const dataStr = JSON.stringify(records);
+    const compressed = btoa(encodeURIComponent(dataStr));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?sync=${compressed}`;
+    
+    // 复制到剪贴板
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('✅ 同步链接已复制！\n\n在新设备浏览器中打开此链接即可同步数据。');
+    }).catch(() => {
+        // 如果复制失败，显示链接
+        prompt('请复制以下链接：', shareUrl);
+    });
+}
+
+// 显示导入弹窗
+function showImportModal() {
+    const url = prompt('请输入同步链接：');
+    if (url && url.includes('?sync=')) {
+        // 提取 sync 参数
+        const syncData = url.split('?sync=')[1];
+        window.location.search = `?sync=${syncData}`;
+    } else if (url) {
+        alert('无效的同步链接');
+    }
+}
+
+// 检查 URL 是否有同步数据
+function checkImportData() {
+    const params = new URLSearchParams(window.location.search);
+    const syncData = params.get('sync');
+    
+    if (syncData) {
+        try {
+            const decoded = decodeURIComponent(atob(syncData));
+            const importedRecords = JSON.parse(decoded);
+            
+            // 统计记录数
+            let count = 0;
+            Object.values(importedRecords).forEach(day => {
+                Object.values(day).forEach(cat => count += cat.length);
+            });
+            
+            if (confirm(`📥 检测到 ${count} 条记录，是否导入？\n\n⚠️ 这将覆盖当前设备的所有数据！`)) {
+                records = importedRecords;
+                saveToStorage();
+                render();
+                alert('✅ 数据导入成功！');
+            }
+            
+            // 清除 URL 参数
+            window.history.replaceState({}, '', window.location.pathname);
+        } catch (e) {
+            alert('❌ 链接无效或已损坏');
+        }
+    }
+}
+
+// 页面加载时检查同步数据
+checkImportData();
+
+// ========== 数据同步功能结束 ==========
         render();
     </script>
+<!-- 数据同步按钮 -->
+<div class="fixed bottom-4 left-5 flex gap-2 z-40">
+    <button onclick="exportData()" 
+            class="px-3 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 shadow-lg">
+        <i class="fas fa-share-alt mr-1"></i>导出同步
+    </button>
+    <button onclick="showImportModal()" 
+            class="px-3 py-1.5 bg-stone-200 text-stone-600 rounded-md text-xs hover:bg-stone-300 shadow-lg">
+        <i class="fas fa-download mr-1"></i>导入
+    </button>
+</div>
 </body>
 </html>
+
 
 
