@@ -48,6 +48,7 @@
             overflow: hidden;
             transition: max-height 0.3s ease, opacity 0.2s ease;
             opacity: 0;
+            padding-left: 2.5rem;  /* 改为统一的缩进 */
         }
         
         .cat-entries.expanded {
@@ -151,6 +152,13 @@
             -webkit-user-select: text;
             user-select: text;
             -webkit-touch-callout: default;
+        }
+        
+        /* 记录项样式 */
+        .record-item {
+            border-left: 2px solid #e7e5e4;
+            padding-left: 0.625rem;
+            margin-left: 0.5rem;
         }
     </style>
 </head>
@@ -578,10 +586,14 @@
             if (document.getElementById(inputId)) return;
             
             // 先展开分类
-            const catEntries = document.querySelector(`#cat-${dateKey}-${category} .cat-entries`);
-            const chevron = document.querySelector(`#cat-${dateKey}-${category} .cat-chevron`);
-            if (catEntries) catEntries.classList.add('expanded');
-            if (chevron) chevron.classList.add('rotated');
+            const catGroup = document.getElementById(`cat-${dateKey}-${category}`);
+            const catEntries = catGroup?.querySelector('.cat-entries');
+            const catChevron = catGroup?.querySelector('.cat-chevron');
+            if (catEntries) {
+                catEntries.classList.add('expanded');
+                catEntries.style.maxHeight = 'none';
+            }
+            if (catChevron) catChevron.classList.add('rotated');
             
             const container = document.getElementById(`items-${dateKey}-${category}`);
             const inputDiv = document.createElement('div');
@@ -657,8 +669,17 @@
         function toggleCategory(header) {
             const entries = header.nextElementSibling;
             const chevron = header.querySelector('.cat-chevron');
-            entries.classList.toggle('expanded');
-            chevron.classList.toggle('rotated');
+            const isExpanding = !entries.classList.contains('expanded');
+            
+            if (isExpanding) {
+                entries.classList.add('expanded');
+                entries.style.maxHeight = 'none';
+                chevron.classList.add('rotated');
+            } else {
+                entries.classList.remove('expanded');
+                entries.style.maxHeight = '0';
+                chevron.classList.remove('rotated');
+            }
         }
 
         // 切换日期展开/收起
@@ -672,13 +693,16 @@
             
             // 展开日期时，同时展开该日期下的所有分类
             if (isExpanding) {
-                const catEntries = subEntries.querySelectorAll('.cat-entries');
-                const catChevrons = subEntries.querySelectorAll('.cat-chevron');
-                catEntries.forEach(el => {
-                    el.style.maxHeight = 'none';
-                    el.classList.add('expanded');
+                const catGroups = subEntries.querySelectorAll('.category-group');
+                catGroups.forEach(group => {
+                    const entries = group.querySelector('.cat-entries');
+                    const chevron = group.querySelector('.cat-chevron');
+                    if (entries) {
+                        entries.classList.add('expanded');
+                        entries.style.maxHeight = 'none';
+                    }
+                    if (chevron) chevron.classList.add('rotated');
                 });
-                catChevrons.forEach(el => el.classList.add('rotated'));
             }
         }
 
@@ -703,11 +727,10 @@
                     <div class="sub-entries ${isToday ? 'expanded' : ''} flex flex-col mt-0.5">
                         ${categories.map((cat, catIndex) => {
                             const items = dayRecords[cat.name] || [];
-                            // 修改：所有分类默认收起
                             const catExpanded = false;
                             
                             return `
-                            <div class="py-1.5 category-group" id="cat-${dateKey}-${cat.name}">
+                            <div class="category-group py-1" id="cat-${dateKey}-${cat.name}">
                                 <!-- 分类标题（可点击展开/收起） -->
                                 <div class="flex items-center justify-between py-1.5 pl-10 pr-2 hover:bg-stone-50 rounded-md cursor-pointer group"
                                      onclick="toggleCategory(this)">
@@ -728,9 +751,9 @@
                                 </div>
                                 
                                 <!-- 分类内容（可展开/收起） -->
-                                <div class="cat-entries ${catExpanded ? 'expanded' : ''} pl-14 pr-3 space-y-1 mt-1">
+                                <div class="cat-entries ${catExpanded ? 'expanded' : ''} pr-3 space-y-1 mt-1">
                                     ${items.map(item => `
-                                        <div class="flex items-center justify-between py-1.5 text-xs text-stone-600 border-l-2 border-stone-200 pl-2.5 font-mono cursor-pointer hover:bg-stone-50 group/item" 
+                                        <div class="record-item flex items-center justify-between py-1.5 text-xs text-stone-600 font-mono cursor-pointer hover:bg-stone-50 group/item" 
                                              onclick="showInput('${dateKey}', '${cat.name}')"
                                              ondblclick="event.stopPropagation(); editRecord('${dateKey}', '${cat.name}', ${item.id}, '${item.content.replace(/'/g, "\\'")}')">
                                             <div class="flex flex-col leading-tight">
