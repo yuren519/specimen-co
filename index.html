@@ -76,7 +76,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* 档案风格弹窗 */
         .archive-modal {
             background: #f5f5f5;
             border: 1px solid #d4d4d4;
@@ -98,7 +97,6 @@
         .status-standby { color: #78716c; }
         .status-error { color: #dc2626; }
         
-        /* 首次启动弹窗 */
         .protocol-text {
             font-size: 11px;
             line-height: 1.8;
@@ -121,7 +119,6 @@
             margin-top: 16px;
         }
         
-        /* 分类标签 */
         .category-code {
             font-size: 9px;
             letter-spacing: 0.1em;
@@ -140,7 +137,6 @@
             color: #78716c;
         }
 
-        /* 编辑模态框 - 工业档案风格 */
         .edit-modal-container {
             background: #F5F5F5;
             border: 1px solid #a8a29e;
@@ -166,7 +162,6 @@
             box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.25);
         }
 
-        /* 记录项 */
         .record-item {
             border-left: 2px solid #e7e5e4;
             padding-left: 0.625rem;
@@ -182,7 +177,6 @@
 </head>
 <body>
     <div class="ios-container">
-        <!-- 品牌标题 -->
         <div class="px-6 pt-2 pb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span style="font-size: 24px;">&#128194;</span>
@@ -197,11 +191,9 @@
             </button>
         </div>
 
-        <!-- 日记列表 -->
         <div class="px-5 pb-12 space-y-0.5" id="diaryList"></div>
     </div>
 
-    <!-- 首次启动弹窗 -->
     <div id="first-run-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-stone-900/95 backdrop-blur-md p-6">
         <div class="archive-modal w-full max-w-sm rounded-lg p-8 relative max-h-[90vh] overflow-y-auto">
             <div class="text-[10px] text-stone-400 mb-6 tracking-widest uppercase text-center">[ PROTOCOL_INITIATED ]</div>
@@ -233,7 +225,6 @@
         </div>
     </div>
 
-    <!-- 档案设置弹窗 -->
     <div id="archive-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/20 backdrop-blur-sm p-4">
         <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeArchiveModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
@@ -295,17 +286,14 @@
         </div>
     </div>
 
-    <!-- 编辑记录模态框 - 工业档案风格 -->
     <div id="edit-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-stone-300/95 p-4">
         <div class="edit-modal-container w-full max-w-md relative">
-            <!-- 协议头 -->
             <div class="border-b border-stone-400 px-4 py-3 bg-stone-200">
                 <div class="text-[10px] text-stone-600 tracking-[0.2em] uppercase font-medium">
                     [ ACTION: EDIT_SPECIMEN_FRAGMENT ]
                 </div>
             </div>
             
-            <!-- 输入区域 -->
             <div class="p-5">
                 <div class="mb-4">
                     <div class="text-[9px] text-stone-500 uppercase tracking-wider mb-2 text-stone-400">Fragment Content</div>
@@ -315,7 +303,6 @@
                               style="font-family: 'JetBrains Mono', monospace; line-height: 1.6;"></textarea>
                 </div>
                 
-                <!-- 元数据展示 -->
                 <div class="flex gap-6 border-t border-stone-300 pt-3 text-[9px] text-stone-400">
                     <span>ID: <span id="edit-record-id" class="text-stone-600">--</span></span>
                     <span>CAT: <span id="edit-record-cat" class="text-stone-600">--</span></span>
@@ -323,7 +310,6 @@
                 </div>
             </div>
             
-            <!-- 按钮区域 -->
             <div class="border-t border-stone-400 px-5 py-4 flex justify-end gap-3 bg-stone-200">
                 <button onclick="closeEditModal()" 
                         class="edit-btn-physical px-5 py-2.5 border border-stone-500 bg-stone-100 text-stone-600 text-[10px] tracking-[0.15em] uppercase hover:bg-stone-50">
@@ -338,17 +324,16 @@
     </div>
 
     <script>
-        // ========== Supabase 配置 ==========
         const SUPABASE_URL = 'https://nfuomptzcarmqrdzhpna.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_DRoG26c3i5nGnl4GGYyp_Q_a4Z2NN4R';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ========== 数据管理 ==========
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
         let syncStatus = 'STANDBY';
         let currentEditData = null;
+        let userExpandedDates = new Set();
+        let userExpandedCategories = new Set();
 
-        // ========== ID 生成 ==========
         function generateFixedId() {
             let fixedId = localStorage.getItem('fixed_protocol_id');
             if (fixedId) return fixedId;
@@ -373,7 +358,6 @@
             if (el) el.textContent = id;
         }
 
-        // ========== 首次启动弹窗 ==========
         function toggleEnterButton(checkbox) {
             const btn = document.getElementById('enter-archive-btn');
             if (checkbox.checked) {
@@ -405,7 +389,6 @@
             modal.classList.add('flex');
         }
 
-        // ========== 档案设置弹窗 ==========
         function showArchiveModal() {
             document.getElementById('archive-modal').classList.remove('hidden');
             document.getElementById('archive-modal').classList.add('flex');
@@ -437,7 +420,6 @@
             }
         }
 
-        // ========== 同步功能 ==========
         async function forceSync() {
             const btn = document.getElementById('sync-btn');
             const originalText = btn.textContent;
@@ -566,14 +548,13 @@
             }
         }
 
-        // ========== 编辑功能 - 工业档案风格 ==========
         function openEditModal(dateKey, category, id, content, time) {
             currentEditData = { dateKey, category, id };
             
             const modal = document.getElementById('edit-modal');
             const textarea = document.getElementById('edit-textarea');
             
-            document.getElementById('edit-textarea').value = content;
+            textarea.value = content;
             document.getElementById('edit-record-id').textContent = id.toString().slice(-6);
             document.getElementById('edit-record-cat').textContent = category;
             document.getElementById('edit-record-time').textContent = time;
@@ -618,7 +599,6 @@
             if (e.target === this) closeEditModal();
         });
 
-        // ========== 记录管理 ==========
         function getTodayKey() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -650,7 +630,11 @@
             openEditModal(dateKey, category, id, oldContent, time);
         }
 
+        // 修改后的 showInput - 阻止事件冒泡
         function showInput(dateKey, category) {
+            // 阻止事件冒泡，防止触发 toggleCategory
+            if (event) event.stopPropagation();
+            
             const inputId = `input-${dateKey}-${category}`;
             if (document.getElementById(inputId)) return;
             
@@ -658,9 +642,11 @@
             const catEntries = catGroup?.querySelector('.cat-entries');
             const catChevron = catGroup?.querySelector('.cat-chevron');
             
+            // 展开分类并记录状态
             if (catEntries) {
                 catEntries.classList.add('expanded');
                 catEntries.style.maxHeight = 'none';
+                userExpandedCategories.add(`cat-${dateKey}-${category}`);
             }
             if (catChevron) catChevron.classList.add('rotated');
             
@@ -679,31 +665,35 @@
             };
             const placeholder = placeholders[category] || '> enter_record...';
             
+            // 修改后的 HTML - 传入 event 阻止冒泡
             inputDiv.innerHTML = `
                 <div class="flex-1">
                     <textarea placeholder="${placeholder}" 
                               id="${textareaId}"
                               rows="2"
-                              class="w-full px-2.5 py-1.5 border border-stone-200 text-xs focus:outline-none focus:border-stone-400 resize-none"
-                              onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value) }"></textarea>
+                              class="w-full px-2.5 py-1.5 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-stone-400 resize-none"
+                              onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value, event) }"></textarea>
                 </div>
-                <button onclick="submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value)" 
-                        class="px-2.5 py-1.5 bg-stone-700 text-white text-xs hover:bg-stone-600 self-start">[OK]</button>
-                <button onclick="this.parentElement.remove()" 
-                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 text-xs hover:bg-stone-300 self-start">[X]</button>
+                <button onclick="event.stopPropagation(); submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value, event)" 
+                        class="px-2.5 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 self-start">[OK]</button>
+                <button onclick="event.stopPropagation(); this.parentElement.remove()" 
+                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 rounded-md text-xs hover:bg-stone-300 self-start">[X]</button>
             `;
             
             container.appendChild(inputDiv);
             document.getElementById(textareaId).focus();
         }
 
-        function submitRecord(dateKey, category, content) {
+        // 修改后的 submitRecord - 阻止事件冒泡
+        function submitRecord(dateKey, category, content, event) {
+            // 阻止事件冒泡，防止触发父元素的点击事件
+            if (event) event.stopPropagation();
+            
             if (!content.trim()) return;
             addRecord(dateKey, category, content);
             document.getElementById(`input-${dateKey}-${category}`)?.remove();
         }
 
-        // ========== 分类与渲染 ==========
         const categories = [
             { code: '[ TASTE ]', name: '味觉存档', emoji: '🥐' },
             { code: '[ QUOTES ]', name: '文献索引', emoji: '📖' },
@@ -737,63 +727,51 @@
             return `${days[date.getDay()]}, ${months[date.getMonth()]} ${d}${suffix(d)}`;
         }
 
-        // ========== 修改后的交互逻辑 ==========
-        
-        // 点击日期标题 - 展开全部并准备添加
-        function toggleDateFull(header, dateKey) {
-            const subEntries = header.nextElementSibling;
-            const chevron = header.querySelector('.chevron');
-            const isExpanding = !subEntries.classList.contains('expanded');
-            
-            subEntries.classList.toggle('expanded');
-            chevron.classList.toggle('rotated');
-            
-            if (isExpanding) {
-                // 展开所有分类
-                const catGroups = subEntries.querySelectorAll('.category-group');
-                catGroups.forEach(group => {
-                    const entries = group.querySelector('.cat-entries');
-                    const catChevron = group.querySelector('.cat-chevron');
-                    if (entries) {
-                        entries.classList.add('expanded');
-                        entries.style.maxHeight = 'none';
-                    }
-                    if (catChevron) catChevron.classList.add('rotated');
-                });
-                
-                // 自动为第一个分类弹出输入框
-                setTimeout(() => {
-                    showInput(dateKey, categories[0].name);
-                }, 150);
-            } else {
-                // 收起时关闭所有分类
-                const catGroups = subEntries.querySelectorAll('.category-group');
-                catGroups.forEach(group => {
-                    const entries = group.querySelector('.cat-entries');
-                    const catChevron = group.querySelector('.cat-chevron');
-                    if (entries) {
-                        entries.classList.remove('expanded');
-                        entries.style.maxHeight = '0';
-                    }
-                    if (catChevron) catChevron.classList.remove('rotated');
-                });
-            }
-        }
-
-        // 点击分类标题 - 仅展开/收起，不自动添加
         function toggleCategory(header) {
             const entries = header.nextElementSibling;
             const chevron = header.querySelector('.cat-chevron');
+            const catGroup = header.closest('.category-group');
+            const catId = catGroup?.id;
             const isExpanding = !entries.classList.contains('expanded');
             
             if (isExpanding) {
                 entries.classList.add('expanded');
                 entries.style.maxHeight = 'none';
                 chevron.classList.add('rotated');
+                if (catId) userExpandedCategories.add(catId);
             } else {
                 entries.classList.remove('expanded');
                 entries.style.maxHeight = '0';
                 chevron.classList.remove('rotated');
+                if (catId) userExpandedCategories.delete(catId);
+            }
+        }
+
+        function toggleDate(header) {
+            const subEntries = header.nextElementSibling;
+            const chevron = header.querySelector('.chevron');
+            const dateKey = subEntries?.dataset?.dateKey;
+            const isExpanding = !subEntries.classList.contains('expanded');
+            
+            subEntries.classList.toggle('expanded');
+            chevron.classList.toggle('rotated');
+            
+            if (isExpanding) {
+                if (dateKey) userExpandedDates.add(dateKey);
+                const catGroups = subEntries.querySelectorAll('.category-group');
+                catGroups.forEach(group => {
+                    const entries = group.querySelector('.cat-entries');
+                    const catChevron = group.querySelector('.cat-chevron');
+                    const catId = group.id;
+                    if (entries) {
+                        entries.classList.add('expanded');
+                        entries.style.maxHeight = 'none';
+                    }
+                    if (catChevron) catChevron.classList.add('rotated');
+                    if (catId) userExpandedCategories.add(catId);
+                });
+            } else {
+                if (dateKey) userExpandedDates.delete(dateKey);
             }
         }
 
@@ -801,31 +779,26 @@
             const container = document.getElementById('diaryList');
             const dates = generateDates();
             
-            container.innerHTML = dates.map((date, index) => {
+            container.innerHTML = dates.map((date) => {
                 const dateKey = formatDateKey(date);
-                const isToday = index === 0;
                 const dateStr = formatDateDisplay(date);
                 const dayRecords = records[dateKey] || {};
                 
                 return `
-                <div class="date-group ${isToday ? 'mb-2' : ''}">
-                    <!-- 日期标题 - 点击展开全部并准备添加 -->
+                <div class="date-group mb-2">
                     <div class="date-header flex items-center gap-2 py-2.5 px-2 -mx-2 rounded-lg cursor-pointer select-none hover:bg-stone-50 transition-colors" 
-                         onclick="toggleDateFull(this, '${dateKey}')">
+                         onclick="toggleDate(this)">
                         <i class="fas fa-caret-down text-sm chevron"></i>
                         <span class="text-sm text-stone-400">🏳️</span>
                         <span class="text-sm text-stone-700 font-normal capitalize tracking-tight">${dateStr}</span>
-                        ${isToday ? '<span class="text-[9px] text-stone-400 ml-2 tracking-wider">[ TODAY ]</span>' : ''}
                     </div>
-                    
-                    <!-- 默认全部收起 -->
-                    <div class="sub-entries flex flex-col mt-0.5">
+                    <div class="sub-entries flex flex-col mt-0.5" data-date-key="${dateKey}">
                         ${categories.map((cat) => {
                             const items = dayRecords[cat.name] || [];
+                            const catId = `cat-${dateKey}-${cat.name}`;
                             
                             return `
-                            <div class="category-group py-1" id="cat-${dateKey}-${cat.name}">
-                                <!-- 分类标题 - 点击仅展开/收起 -->
+                            <div class="category-group py-1" id="${catId}">
                                 <div class="flex items-center justify-between py-1.5 pl-10 pr-2 hover:bg-stone-50 rounded-md cursor-pointer group"
                                      onclick="toggleCategory(this)">
                                     <div class="flex items-center gap-2">
@@ -845,7 +818,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 分类内容 - 默认收起 -->
                                 <div class="cat-entries pr-3 space-y-1 mt-1">
                                     ${items.map(item => `
                                         <div class="record-item flex items-center justify-between py-1.5 text-xs text-stone-600 cursor-pointer hover:bg-stone-50 group/item" 
@@ -872,9 +844,28 @@
                 </div>
                 `;
             }).join('');
+            
+            userExpandedDates.forEach(dateKey => {
+                const subEntries = document.querySelector(`[data-date-key="${dateKey}"]`);
+                if (subEntries) {
+                    subEntries.classList.add('expanded');
+                    const chevron = subEntries.previousElementSibling?.querySelector('.chevron');
+                    chevron?.classList.add('rotated');
+                }
+            });
+            
+            userExpandedCategories.forEach(catId => {
+                const group = document.getElementById(catId);
+                if (group) {
+                    const entries = group.querySelector('.cat-entries');
+                    const chevron = group.querySelector('.cat-chevron');
+                    entries?.classList.add('expanded');
+                    if (entries) entries.style.maxHeight = 'none';
+                    chevron?.classList.add('rotated');
+                }
+            });
         }
 
-        // ========== 初始化 ==========
         function init() {
             const hasVisited = localStorage.getItem('has_visited');
             if (!hasVisited) {
