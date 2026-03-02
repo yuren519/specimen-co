@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Specimen & Co</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,7 +38,7 @@
         }
         
         .sub-entries.expanded {
-            max-height: 500px;
+            max-height: none;  /* 修改：移除高度限制 */
             opacity: 1;
         }
         
@@ -131,6 +131,13 @@
         .category-desc {
             font-size: 10px;
             color: #78716c;
+        }
+
+        /* textarea 样式优化 */
+        textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: default;
         }
     </style>
 </head>
@@ -537,6 +544,7 @@
             }
         }
 
+        // 修改：改为 textarea 多行输入
         function showInput(dateKey, category) {
             const inputId = `input-${dateKey}-${category}`;
             if (document.getElementById(inputId)) return;
@@ -544,18 +552,19 @@
             const container = document.getElementById(`items-${dateKey}-${category}`);
             const inputDiv = document.createElement('div');
             inputDiv.id = inputId;
-            inputDiv.className = 'flex gap-2 mt-2 animate-fade-in';
+            inputDiv.className = 'flex gap-2 mt-2 animate-fade-in items-start';
             inputDiv.innerHTML = `
-                <input type="text" placeholder="> enter_record..." 
-                       class="flex-1 px-2.5 py-1.5 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-stone-400 font-mono"
-                       onkeypress="if(event.key==='Enter') submitRecord('${dateKey}', '${category}', this.value)">
+                <textarea placeholder="> enter_record..." 
+                          rows="2"
+                          class="flex-1 px-2.5 py-1.5 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-stone-400 font-mono resize-none"
+                          onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitRecord('${dateKey}', '${category}', this.value) }"></textarea>
                 <button onclick="submitRecord('${dateKey}', '${category}', this.previousElementSibling.value)" 
-                        class="px-2.5 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 font-mono">[OK]</button>
+                        class="px-2.5 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 font-mono self-start">[OK]</button>
                 <button onclick="this.parentElement.remove()" 
-                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 rounded-md text-xs hover:bg-stone-300 font-mono">[X]</button>
+                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 rounded-md text-xs hover:bg-stone-300 font-mono self-start">[X]</button>
             `;
             container.appendChild(inputDiv);
-            inputDiv.querySelector('input').focus();
+            inputDiv.querySelector('textarea').focus();
         }
 
         function submitRecord(dateKey, category, content) {
