@@ -15,8 +15,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <style>
-        body {
+        * {
             font-family: 'JetBrains Mono', monospace;
+        }
+        
+        body {
             background: #EFEFEF;
             -webkit-font-smoothing: antialiased;
         }
@@ -42,7 +45,6 @@
             opacity: 1;
         }
         
-        /* 分类内容展开/收起 */
         .cat-entries {
             max-height: 0;
             overflow: hidden;
@@ -89,23 +91,14 @@
         }
         
         .archive-value {
-            font-family: 'JetBrains Mono', monospace;
             letter-spacing: 0.05em;
         }
         
-        .status-connected {
-            color: #16a34a;
-        }
+        .status-connected { color: #16a34a; }
+        .status-standby { color: #78716c; }
+        .status-error { color: #dc2626; }
         
-        .status-standby {
-            color: #78716c;
-        }
-        
-        .status-error {
-            color: #dc2626;
-        }
-        
-        /* 首次启动弹窗特殊样式 */
+        /* 首次启动弹窗 */
         .protocol-text {
             font-size: 11px;
             line-height: 1.8;
@@ -128,7 +121,7 @@
             margin-top: 16px;
         }
         
-        /* 分类标签样式 */
+        /* 分类标签 */
         .category-code {
             font-size: 9px;
             letter-spacing: 0.1em;
@@ -141,30 +134,55 @@
             color: #44403c;
             font-weight: 500;
         }
-        
+
         .category-desc {
             font-size: 10px;
             color: #78716c;
         }
 
-        /* textarea 样式优化 */
-        textarea {
-            -webkit-user-select: text;
-            user-select: text;
-            -webkit-touch-callout: default;
+        /* 编辑模态框 - 工业档案风格 */
+        .edit-modal-container {
+            background: #F5F5F5;
+            border: 1px solid #a8a29e;
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.15);
         }
         
-        /* 记录项样式 */
+        .edit-btn-physical {
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.15);
+            transition: all 0.05s ease;
+        }
+        
+        .edit-btn-physical:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.15);
+        }
+        
+        .edit-btn-primary {
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.25);
+        }
+        
+        .edit-btn-primary:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px rgba(0,0,0,0.25);
+        }
+
+        /* 记录项 */
         .record-item {
             border-left: 2px solid #e7e5e4;
             padding-left: 0.625rem;
             margin-left: 0.5rem;
         }
+        
+        textarea {
+            -webkit-user-select: text;
+            user-select: text;
+            -webkit-touch-callout: default;
+        }
     </style>
 </head>
 <body>
     <div class="ios-container">
-        <!-- 品牌标题（带设置按钮） -->
+        <!-- 品牌标题 -->
         <div class="px-6 pt-2 pb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span style="font-size: 24px;">&#128194;</span>
@@ -174,7 +192,6 @@
                     <span class="text-[10px] text-stone-400 font-light tracking-widest uppercase">Daily Chronicles</span>
                 </div>
             </div>
-            <!-- 设置按钮（改为齿轮图标） -->
             <button onclick="showArchiveModal()" class="text-stone-400 hover:text-stone-600 transition-colors p-2">
                 <i class="fas fa-cog text-lg"></i>
             </button>
@@ -187,10 +204,8 @@
     <!-- 首次启动弹窗 -->
     <div id="first-run-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-stone-900/95 backdrop-blur-md p-6">
         <div class="archive-modal w-full max-w-sm rounded-lg p-8 relative max-h-[90vh] overflow-y-auto">
-            <!-- 协议标题 -->
             <div class="text-[10px] text-stone-400 mb-6 tracking-widest uppercase text-center">[ PROTOCOL_INITIATED ]</div>
             
-            <!-- 欢迎文案 -->
             <div class="protocol-text mb-6 text-stone-600">
                 <p class="mb-3">欢迎来到 Specimen & Co。</p>
                 <p class="mb-3">在这里，生活不再是流逝的瞬间，而是被编号、被观察、被封存的数字标本。</p>
@@ -199,25 +214,21 @@
             
             <div class="protocol-divider"></div>
             
-            <!-- Access Key 显示 -->
             <div class="text-center mb-6">
                 <div class="text-[9px] text-stone-400 mb-2 uppercase tracking-widest">Access Key</div>
-                <div id="new-key-display" class="text-3xl font-bold text-stone-800 tracking-widest font-mono">000000</div>
+                <div id="new-key-display" class="text-3xl font-bold text-stone-800 tracking-widest">000000</div>
             </div>
             
-            <!-- 确认选项 -->
             <label class="flex items-start gap-3 cursor-pointer mb-6">
                 <input type="checkbox" id="key-confirm" class="mt-1 accent-stone-800" onchange="toggleEnterButton(this)">
                 <span class="text-[10px] text-stone-500 leading-relaxed">我已记录此编号，知晓遗失将导致档案永久不可恢复。</span>
             </label>
             
-            <!-- 进入按钮 -->
             <button id="enter-archive-btn" onclick="confirmIdentity()" disabled 
-                    class="w-full py-4 bg-stone-200 text-stone-400 text-[10px] tracking-[0.3em] uppercase rounded transition-all">
+                    class="w-full py-4 bg-stone-200 text-stone-400 text-[10px] tracking-[0.3em] uppercase transition-all">
                 Enter Archive
             </button>
             
-            <!-- 签名 -->
             <div class="text-center mt-4 text-[10px] text-stone-400 italic">— 标本管理员</div>
         </div>
     </div>
@@ -225,26 +236,20 @@
     <!-- 档案设置弹窗 -->
     <div id="archive-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/20 backdrop-blur-sm p-4">
         <div class="archive-modal w-full max-w-sm rounded-lg p-6 relative max-h-[90vh] overflow-y-auto">
-            <!-- 关闭按钮 -->
             <button onclick="closeArchiveModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
                 <i class="fas fa-times"></i>
             </button>
             
-            <!-- 标题 -->
             <div class="mb-6 pb-4 border-b border-stone-300">
                 <div class="archive-label mb-1">Archive Access</div>
                 <div class="text-lg font-semibold text-stone-800">档案存取</div>
             </div>
             
-            <!-- ACCESSION NO. -->
             <div class="mb-5">
                 <div class="archive-label mb-2">[ ACCESSION NO. ]</div>
-                <div class="archive-value text-xl font-bold text-stone-800 tracking-wider" id="protocol-id">
-                    SP-0000-0000
-                </div>
+                <div class="archive-value text-xl font-bold text-stone-800 tracking-wider" id="protocol-id">SP-0000-0000</div>
             </div>
             
-            <!-- UPLINK STATUS -->
             <div class="mb-5">
                 <div class="archive-label mb-2">[ UPLINK STATUS ]</div>
                 <div class="flex items-center gap-2">
@@ -253,7 +258,6 @@
                 </div>
             </div>
             
-            <!-- SYNC CONTROL -->
             <div class="mb-6">
                 <div class="archive-label mb-2">[ SYNC CONTROL ]</div>
                 <button onclick="forceSync()" id="sync-btn" class="px-4 py-2 bg-stone-700 text-white text-xs font-medium rounded hover:bg-stone-600 transition-colors w-full">
@@ -262,17 +266,13 @@
                 <div class="text-[10px] text-stone-500 mt-1">手动同步当前档案到云端</div>
             </div>
             
-            <!-- REMOTE ACCESS -->
             <div class="mb-6">
                 <div class="archive-label mb-2">[ REMOTE ACCESS ]</div>
                 <div class="flex gap-2">
-                    <input type="text" 
-                           id="remote-protocol-input"
-                           placeholder="SP-XXXX-XXXX" 
-                           class="flex-1 px-3 py-2 bg-white border border-stone-300 rounded text-sm font-mono tracking-wider focus:outline-none focus:border-stone-500 uppercase"
+                    <input type="text" id="remote-protocol-input" placeholder="SP-XXXX-XXXX" 
+                           class="flex-1 px-3 py-2 bg-white border border-stone-300 rounded text-sm tracking-wider focus:outline-none focus:border-stone-500 uppercase"
                            maxlength="13">
-                    <button onclick="syncFromRemote()" 
-                            class="px-4 py-2 bg-stone-800 text-white text-xs font-medium rounded hover:bg-stone-700 transition-colors">
+                    <button onclick="syncFromRemote()" class="px-4 py-2 bg-stone-800 text-white text-xs font-medium rounded hover:bg-stone-700 transition-colors">
                         UPLINK
                     </button>
                 </div>
@@ -281,7 +281,6 @@
                 </div>
             </div>
             
-            <!-- SYSTEM_LOG -->
             <div class="system-log">
                 <div class="archive-label mb-2">[ SYSTEM_LOG ]</div>
                 <div class="space-y-1">
@@ -296,6 +295,48 @@
         </div>
     </div>
 
+    <!-- 编辑记录模态框 - 工业档案风格 -->
+    <div id="edit-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-stone-300/95 p-4">
+        <div class="edit-modal-container w-full max-w-md relative">
+            <!-- 协议头 -->
+            <div class="border-b border-stone-400 px-4 py-3 bg-stone-200">
+                <div class="text-[10px] text-stone-600 tracking-[0.2em] uppercase font-medium">
+                    [ ACTION: EDIT_SPECIMEN_FRAGMENT ]
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="p-5">
+                <div class="mb-4">
+                    <div class="text-[9px] text-stone-500 uppercase tracking-wider mb-2 text-stone-400">Fragment Content</div>
+                    <textarea id="edit-textarea" 
+                              rows="5"
+                              class="w-full px-3 py-3 bg-white border border-stone-400 text-stone-700 text-sm focus:outline-none focus:border-stone-600 resize-none"
+                              style="font-family: 'JetBrains Mono', monospace; line-height: 1.6;"></textarea>
+                </div>
+                
+                <!-- 元数据展示 -->
+                <div class="flex gap-6 border-t border-stone-300 pt-3 text-[9px] text-stone-400">
+                    <span>ID: <span id="edit-record-id" class="text-stone-600">--</span></span>
+                    <span>CAT: <span id="edit-record-cat" class="text-stone-600">--</span></span>
+                    <span>TIME: <span id="edit-record-time" class="text-stone-600">--</span></span>
+                </div>
+            </div>
+            
+            <!-- 按钮区域 -->
+            <div class="border-t border-stone-400 px-5 py-4 flex justify-end gap-3 bg-stone-200">
+                <button onclick="closeEditModal()" 
+                        class="edit-btn-physical px-5 py-2.5 border border-stone-500 bg-stone-100 text-stone-600 text-[10px] tracking-[0.15em] uppercase hover:bg-stone-50">
+                    [ DISCARD ]
+                </button>
+                <button onclick="confirmEdit()" 
+                        class="edit-btn-primary px-5 py-2.5 border border-stone-700 bg-stone-700 text-white text-[10px] tracking-[0.15em] uppercase hover:bg-stone-800">
+                    [ SEAL_UPDATE ]
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== Supabase 配置 ==========
         const SUPABASE_URL = 'https://nfuomptzcarmqrdzhpna.supabase.co';
@@ -305,8 +346,9 @@
         // ========== 数据管理 ==========
         let records = JSON.parse(localStorage.getItem('specimen_records')) || {};
         let syncStatus = 'STANDBY';
+        let currentEditData = null;
 
-        // 基于浏览器指纹生成固定代号
+        // ========== ID 生成 ==========
         function generateFixedId() {
             let fixedId = localStorage.getItem('fixed_protocol_id');
             if (fixedId) return fixedId;
@@ -331,7 +373,7 @@
             if (el) el.textContent = id;
         }
 
-        // ========== 首次启动弹窗控制 ==========
+        // ========== 首次启动弹窗 ==========
         function toggleEnterButton(checkbox) {
             const btn = document.getElementById('enter-archive-btn');
             if (checkbox.checked) {
@@ -363,7 +405,7 @@
             modal.classList.add('flex');
         }
 
-        // ========== 档案设置弹窗控制 ==========
+        // ========== 档案设置弹窗 ==========
         function showArchiveModal() {
             document.getElementById('archive-modal').classList.remove('hidden');
             document.getElementById('archive-modal').classList.add('flex');
@@ -395,7 +437,7 @@
             }
         }
 
-        // ========== 强制同步 ==========
+        // ========== 同步功能 ==========
         async function forceSync() {
             const btn = document.getElementById('sync-btn');
             const originalText = btn.textContent;
@@ -406,29 +448,18 @@
             
             try {
                 await saveToCloud();
-                
-                if (syncStatus === 'CONNECTED') {
-                    btn.textContent = '✓ SYNCED';
-                } else {
-                    btn.textContent = '✗ FAILED';
-                }
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50');
-                }, 2000);
+                btn.textContent = syncStatus === 'CONNECTED' ? '✓ SYNCED' : '✗ FAILED';
             } catch (e) {
                 btn.textContent = '✗ ERROR';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50');
-                }, 2000);
             }
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }, 2000);
         }
 
-        // ========== 云端同步 ==========
         async function loadFromCloud() {
             const protocolId = getProtocolId();
             const deviceCode = protocolId.replace(/SP-|-/g, '');
@@ -471,7 +502,6 @@
                     }, { onConflict: 'device_code' });
                 
                 if (error) {
-                    console.error('Supabase error:', error);
                     syncStatus = 'ERROR';
                     updateSyncStatus();
                     return;
@@ -479,9 +509,7 @@
                 
                 syncStatus = 'CONNECTED';
                 updateSyncStatus();
-                console.log('✓ 档案已归档');
             } catch (e) {
-                console.error('归档失败:', e);
                 syncStatus = 'ERROR';
                 updateSyncStatus();
             }
@@ -538,7 +566,63 @@
             }
         }
 
-        // ========== 原有功能 ==========
+        // ========== 编辑功能 - 工业档案风格 ==========
+        function openEditModal(dateKey, category, id, content, time) {
+            currentEditData = { dateKey, category, id };
+            
+            const modal = document.getElementById('edit-modal');
+            const textarea = document.getElementById('edit-textarea');
+            
+            // 填充数据
+            textarea.value = content;
+            document.getElementById('edit-record-id').textContent = id.toString().slice(-6);
+            document.getElementById('edit-record-cat').textContent = category;
+            document.getElementById('edit-record-time').textContent = time;
+            
+            // 显示模态框
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // 聚焦并选中全部
+            setTimeout(() => {
+                textarea.focus();
+                textarea.select();
+            }, 50);
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('edit-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            currentEditData = null;
+        }
+
+        function confirmEdit() {
+            if (!currentEditData) return;
+            
+            const newContent = document.getElementById('edit-textarea').value;
+            const { dateKey, category, id } = currentEditData;
+            
+            if (newContent.trim() !== '') {
+                if (records[dateKey]?.[category]) {
+                    const record = records[dateKey][category].find(r => r.id === id);
+                    if (record) {
+                        record.content = newContent;
+                        saveToStorage();
+                        render();
+                    }
+                }
+            }
+            
+            closeEditModal();
+        }
+
+        // 点击模态框背景关闭
+        document.getElementById('edit-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+
+        // ========== 记录管理 ==========
         function getTodayKey() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -565,27 +649,16 @@
             }
         }
 
-        // 编辑记录
-        function editRecord(dateKey, category, id, oldContent) {
-            const newContent = prompt('编辑记录:', oldContent);
-            if (newContent !== null && newContent.trim() !== '' && newContent !== oldContent) {
-                if (records[dateKey]?.[category]) {
-                    const record = records[dateKey][category].find(r => r.id === id);
-                    if (record) {
-                        record.content = newContent;
-                        saveToStorage();
-                        render();
-                    }
-                }
-            }
+        // 新的编辑入口
+        function editRecord(dateKey, category, id, oldContent, time) {
+            event.stopPropagation();
+            openEditModal(dateKey, category, id, oldContent, time);
         }
 
-        // 修改 showInput 函数
         function showInput(dateKey, category) {
             const inputId = `input-${dateKey}-${category}`;
             if (document.getElementById(inputId)) return;
             
-            // 先展开分类
             const catGroup = document.getElementById(`cat-${dateKey}-${category}`);
             const catEntries = catGroup?.querySelector('.cat-entries');
             const catChevron = catGroup?.querySelector('.cat-chevron');
@@ -602,7 +675,6 @@
             
             const textareaId = `ta-${inputId}`;
             
-            // 分类对应的 placeholder
             const placeholders = {
                 '味觉存档': '> 记下今日摄入内容 / log_intake',
                 '文献索引': '> 存入这段触动你的话 / archive_quotes',
@@ -616,13 +688,13 @@
                     <textarea placeholder="${placeholder}" 
                               id="${textareaId}"
                               rows="2"
-                              class="w-full px-2.5 py-1.5 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-stone-400 font-mono resize-none"
+                              class="w-full px-2.5 py-1.5 border border-stone-200 rounded-md text-xs focus:outline-none focus:border-stone-400 resize-none"
                               onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value) }"></textarea>
                 </div>
                 <button onclick="submitRecord('${dateKey}', '${category}', document.getElementById('${textareaId}').value)" 
-                        class="px-2.5 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 font-mono self-start">[OK]</button>
+                        class="px-2.5 py-1.5 bg-stone-700 text-white rounded-md text-xs hover:bg-stone-600 self-start">[OK]</button>
                 <button onclick="this.parentElement.remove()" 
-                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 rounded-md text-xs hover:bg-stone-300 font-mono self-start">[X]</button>
+                        class="px-2.5 py-1.5 bg-stone-200 text-stone-500 rounded-md text-xs hover:bg-stone-300 self-start">[X]</button>
             `;
             
             container.appendChild(inputDiv);
@@ -635,12 +707,12 @@
             document.getElementById(`input-${dateKey}-${category}`)?.remove();
         }
 
-        // ========== 四个分类（档案馆风格）==========
+        // ========== 分类与渲染 ==========
         const categories = [
-            { code: '[ TASTE ]', name: '味觉存档', emoji: '🥐', icon: '🥐' },
-            { code: '[ QUOTES ]', name: '文献索引', emoji: '📖', icon: '📖' },
-            { code: '[ LOGS ]', name: '时空存证', emoji: '⏱️', icon: '⏱️' },
-            { code: '[ MEDIA ]', name: '视听切片', emoji: '🎞️', icon: '🎞️' }
+            { code: '[ TASTE ]', name: '味觉存档', emoji: '🥐' },
+            { code: '[ QUOTES ]', name: '文献索引', emoji: '📖' },
+            { code: '[ LOGS ]', name: '时空存证', emoji: '⏱️' },
+            { code: '[ MEDIA ]', name: '视听切片', emoji: '🎞️' }
         ];
 
         function generateDates() {
@@ -669,7 +741,6 @@
             return `${days[date.getDay()]}, ${months[date.getMonth()]} ${d}${suffix(d)}`;
         }
 
-        // 切换分类展开/收起
         function toggleCategory(header) {
             const entries = header.nextElementSibling;
             const chevron = header.querySelector('.cat-chevron');
@@ -686,7 +757,6 @@
             }
         }
 
-        // 切换日期展开/收起
         function toggleDate(header) {
             const subEntries = header.nextElementSibling;
             const chevron = header.querySelector('.chevron');
@@ -695,7 +765,6 @@
             subEntries.classList.toggle('expanded');
             chevron.classList.toggle('rotated');
             
-            // 展开日期时，同时展开该日期下的所有分类
             if (isExpanding) {
                 const catGroups = subEntries.querySelectorAll('.category-group');
                 catGroups.forEach(group => {
@@ -729,13 +798,11 @@
                         <span class="text-sm text-stone-700 font-normal capitalize tracking-tight">${dateStr}</span>
                     </div>
                     <div class="sub-entries ${isToday ? 'expanded' : ''} flex flex-col mt-0.5">
-                        ${categories.map((cat, catIndex) => {
+                        ${categories.map((cat) => {
                             const items = dayRecords[cat.name] || [];
-                            const catExpanded = false;
                             
                             return `
                             <div class="category-group py-1" id="cat-${dateKey}-${cat.name}">
-                                <!-- 分类标题（可点击展开/收起） -->
                                 <div class="flex items-center justify-between py-1.5 pl-10 pr-2 hover:bg-stone-50 rounded-md cursor-pointer group"
                                      onclick="toggleCategory(this)">
                                     <div class="flex items-center gap-2">
@@ -749,30 +816,29 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="text-stone-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); showInput('${dateKey}', '${cat.name}')">+</span>
-                                        <i class="fas fa-caret-down text-xs chevron ${catExpanded ? 'rotated' : ''} text-stone-300 cat-chevron"></i>
+                                        <span class="text-stone-300 text-lg opacity-0 group-hover:opacity-100 transition-opacity" 
+                                              onclick="event.stopPropagation(); showInput('${dateKey}', '${cat.name}')">+</span>
+                                        <i class="fas fa-caret-down text-xs chevron text-stone-300 cat-chevron"></i>
                                     </div>
                                 </div>
                                 
-                                <!-- 分类内容（可展开/收起） -->
-                                <div class="cat-entries ${catExpanded ? 'expanded' : ''} pr-3 space-y-1 mt-1">
+                                <div class="cat-entries pr-3 space-y-1 mt-1">
                                     ${items.map(item => `
-                                        <div class="record-item flex items-center justify-between py-1.5 text-xs text-stone-600 font-mono cursor-pointer hover:bg-stone-50 group/item" 
+                                        <div class="record-item flex items-center justify-between py-1.5 text-xs text-stone-600 cursor-pointer hover:bg-stone-50 group/item" 
                                              onclick="showInput('${dateKey}', '${cat.name}')"
-                                             ondblclick="event.stopPropagation(); editRecord('${dateKey}', '${cat.name}', ${item.id}, '${item.content.replace(/'/g, "\\'")}')">
+                                             ondblclick="editRecord('${dateKey}', '${cat.name}', ${item.id}, '${item.content.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${item.time}')">
                                             <div class="flex flex-col leading-tight">
-                                                <span class="text-stone-700">${item.content}</span>
+                                                <span class="text-stone-700 whitespace-pre-wrap">${item.content}</span>
                                                 <span class="text-[10px] text-stone-400 mt-0.5">// ${item.time}</span>
                                             </div>
                                             <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                <button onclick="event.stopPropagation(); editRecord('${dateKey}', '${cat.name}', ${item.id}, '${item.content.replace(/'/g, "\\'")}')" 
+                                                <button onclick="event.stopPropagation(); editRecord('${dateKey}', '${cat.name}', ${item.id}, '${item.content.replace(/'/g, "\\'").replace(/"/g, '&quot;')}', '${item.time}')" 
                                                         class="text-stone-300 hover:text-blue-400 transition-colors px-1 text-xs">[e]</button>
                                                 <button onclick="event.stopPropagation(); deleteRecord('${dateKey}', '${cat.name}', ${item.id})" 
                                                         class="text-stone-300 hover:text-red-400 transition-colors px-1 text-xs">[-]</button>
                                             </div>
                                         </div>
                                     `).join('')}
-                                    <!-- 输入框容器 -->
                                     <div id="items-${dateKey}-${cat.name}"></div>
                                 </div>
                             </div>
